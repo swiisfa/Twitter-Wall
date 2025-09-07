@@ -1,5 +1,4 @@
 [
-  "https://twitter.com/anyuser/status/1964735570556731531",
   "https://twitter.com/anyuser/status/1964665459225031000",
   "https://twitter.com/anyuser/status/1964479265484784124",
   "https://twitter.com/anyuser/status/1964600082902237544",
@@ -87,5 +86,6 @@
   "https://twitter.com/anyuser/status/1964344851136127445",
   "https://twitter.com/anyuser/status/1964563452309205248",
   "https://twitter.com/anyuser/status/1964394440300052699",
-  "https://twitter.com/anyuser/status/1964588461383733563"
+  "https://twitter.com/anyuser/status/1964588461383733563",
+  "https://api.github.com/repos/swiisfa/Twitter-Wall/contents/tweets.json?ref=main"
 ]
