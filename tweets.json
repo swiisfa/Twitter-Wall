@@ -1,24 +1,80 @@
 [
-  "https://twitter.com/anyuser/status/1964723489635697087",
-  "https://twitter.com/anyuser/status/1964725765095710837",
-  "https://twitter.com/anyuser/status/1964734609142534403",
-  "https://twitter.com/anyuser/status/1964857326361628851",
-  "https://twitter.com/anyuser/status/1964840985881633037",
-  "https://twitter.com/anyuser/status/1964804285943923144",
-  "https://twitter.com/anyuser/status/1964790244664078825",
-  "https://twitter.com/anyuser/status/1964838953141616746",
-  "https://twitter.com/anyuser/status/1964743621149966812",
-  "https://twitter.com/anyuser/status/1964732470869254230",
-  "https://twitter.com/anyuser/status/1964721934589120633",
-  "https://twitter.com/anyuser/status/1964786752566268295",
-  "https://twitter.com/anyuser/status/1964743583866761280",
-  "https://twitter.com/anyuser/status/1964713441899565330",
-  "https://twitter.com/anyuser/status/1964853492641874050",
-  "https://twitter.com/anyuser/status/1964750765274353738",
-  "https://twitter.com/anyuser/status/1964742928737399153",
-  "https://twitter.com/anyuser/status/1964761838261870745",
-  "https://twitter.com/anyuser/status/1964742203474936015",
-  "https://twitter.com/anyuser/status/1964765724351549685",
-  "https://twitter.com/anyuser/status/1964689315734454356",
-  "https://twitter.com/anyuser/status/1964751520592998532"
+  {
+    "url": "https://twitter.com/anyuser/status/1964723489635697087"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964725765095710837"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964734609142534403"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964857326361628851"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964840985881633037"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964804285943923144"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964790244664078825"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964838953141616746"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964743621149966812"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964732470869254230"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964721934589120633"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964786752566268295"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964743583866761280"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964713441899565330"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964853492641874050"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964750765274353738"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964742928737399153"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964761838261870745"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964742203474936015"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964765724351549685"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964689315734454356"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964751520592998532"
+  },
+  {
+    "url": "https://api.github.com/repos/swiisfa/Twitter-Wall/contents/tweets.json?ref=main",
+    "repliedAt": null
+  },
+  {
+    "url": "{\n  \"nodes\": [\n    {\n      \"parameters\": {\n        \"assignments\": {\n          \"assignments\": [\n            {\n              \"id\": \"url-field\",\n              \"name\": \"url\",\n              \"type\": \"string\",\n              \"value\": \"=https://twitter.com/anyuser/status/1964751520592998532\"\n            },\n            {\n              \"id\": \"repliedAt-field\",\n              \"name\": \"repliedAt\",\n              \"type\": \"string\",\n              \"value\": \"=Mon Sep 08 02:04:18 +0000 2025\"\n            },\n            {\n              \"id\": \"replyId-field\",\n              \"name\": \"replyId\",\n              \"type\": \"string\",\n              \"value\": \"=1964872390720274601\"\n            }\n          ]\n        },\n        \"options\": {\n          \"include\": \"all\"   // keep other fields if you want; change to \"selected\" to emit only these 3\n        }\n      },\n      \"type\": \"n8n-nodes-base.set\",\n      \"typeVersion\": 3.4,\n      \"position\": [ 280, -100 ],\n      \"name\": \"Collect Parent URLs\"\n    }\n  ],\n  \"connections\": {}\n}",
+    "repliedAt": null
+  },
+  {
+    "url": "{\n  \"nodes\": [\n    {\n      \"parameters\": {\n        \"assignments\": {\n          \"assignments\": [\n            {\n              \"id\": \"url-field\",\n              \"name\": \"url\",\n              \"type\": \"string\",\n              \"value\": \"=https://twitter.com/anyuser/status/1964689315734454356\"\n            },\n            {\n              \"id\": \"repliedAt-field\",\n              \"name\": \"repliedAt\",\n              \"type\": \"string\",\n              \"value\": \"=Mon Sep 08 02:02:34 +0000 2025\"\n            },\n            {\n              \"id\": \"replyId-field\",\n              \"name\": \"replyId\",\n              \"type\": \"string\",\n              \"value\": \"=1964871957561958682\"\n            }\n          ]\n        },\n        \"options\": {\n          \"include\": \"all\"   // keep other fields if you want; change to \"selected\" to emit only these 3\n        }\n      },\n      \"type\": \"n8n-nodes-base.set\",\n      \"typeVersion\": 3.4,\n      \"position\": [ 280, -100 ],\n      \"name\": \"Collect Parent URLs\"\n    }\n  ],\n  \"connections\": {}\n}",
+    "repliedAt": null
+  }
 ]
