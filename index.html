@@ -1,215 +1,179 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tweet Wall</title>
+
   <style>
-    :root {
-      color-scheme: dark;
+    :root{
+      --bg:#0f1419; --card:#0b0f13; --text:#e6edf3; --muted:#8b98a5; --accent:#1d9bf0;
+      --pad:16px; --radius:14px; --gap:12px; --maxw:760px;
     }
-    body {
-      margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: #0b0f14;
-      color: #e6edf3;
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji"}
+    header{
+      position:sticky; top:0; z-index:5; backdrop-filter:saturate(180%) blur(10px);
+      background-color:rgba(15,20,25,.75); border-bottom:1px solid rgba(255,255,255,.06);
     }
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      backdrop-filter: blur(8px);
-      background: rgba(11,15,20,0.7);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      padding: 12px 16px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 12px;
-      align-items: center;
+    .wrap{max-width:var(--maxw); margin:0 auto; padding:10px var(--pad)}
+    h1{margin:0; font-size:20px}
+    .meta{color:var(--muted); font-size:13px; margin-top:4px}
+    .controls{display:flex; gap:var(--gap); margin-top:10px}
+    button{
+      background:var(--accent); color:#fff; border:none; border-radius:10px; padding:10px 14px;
+      font-weight:600; cursor:pointer; transition:transform .05s ease, opacity .2s ease;
     }
-    h1 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
+    button:disabled{opacity:.4; cursor:not-allowed}
+    main{max-width:var(--maxw); margin:0 auto; padding:var(--pad)}
+    .grid{display:grid; gap:16px}
+    .card{
+      background:var(--card); border:1px solid rgba(255,255,255,.06);
+      border-radius:var(--radius); padding:12px;
     }
-    #stats, #errors {
-      font-size: 12px;
-      opacity: 0.8;
-    }
-    .buttons { display: flex; gap: 8px; }
-    button {
-      background: #1f6feb;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    button[disabled] { opacity: 0.5; cursor: default; }
-    main {
-      max-width: 760px;
-      margin: 16px auto 80px auto;
-      padding: 0 16px;
-    }
-    .tweet-card {
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 12px;
-      padding: 8px;
-      margin: 14px 0;
-      background: rgba(255,255,255,0.02);
-    }
-    footer {
-      position: sticky;
-      bottom: 0;
-      z-index: 10;
-      backdrop-filter: blur(8px);
-      background: rgba(11,15,20,0.7);
-      border-top: 1px solid rgba(255,255,255,0.06);
-      padding: 12px 16px;
-      display: flex;
-      justify-content: center;
-    }
+    .err{color:#ff6b6b; white-space:pre-wrap}
+    .footer-space{height:60px}
+    .small{color:var(--muted); font-size:12px}
   </style>
-  <!-- Twitter widgets loader -->
+
+  <!-- Twitter widgets -->
   <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </head>
 <body>
   <header>
-    <div>
+    <div class="wrap">
       <h1>Tweet Wall</h1>
-      <div id="stats">Loading…</div>
-      <div id="errors" style="color:#ff9b9b;"></div>
-    </div>
-    <div class="buttons">
-      <button id="loadMore">Load more</button>
+      <div class="meta">
+        <span id="stats">Loading…</span>
+      </div>
+      <div class="controls">
+        <button id="refreshBtn">Refresh</button>
+        <button id="loadMoreBtn" disabled>Load more</button>
+        <span class="small" id="hint"></span>
+      </div>
     </div>
   </header>
 
-  <main id="feed"></main>
-
-  <footer>
-    <button id="loadMoreBottom">Load more</button>
-  </footer>
+  <main>
+    <div id="feed" class="grid"></div>
+    <div class="footer-space"></div>
+    <div id="error" class="err" style="display:none;"></div>
+  </main>
 
   <script>
-  (async function () {
-    // Grab elements safely
+    // -------- Page limits (safe defaults) --------
+    const MAX_SHOW   = 60;  // max tweets rendered on page
+    const BATCH_SIZE = 6;   // how many to render per click/auto-batch
+    // --------------------------------------------
+
     const FEED  = document.getElementById('feed');
     const STATS = document.getElementById('stats');
-    const ERR   = document.getElementById('errors');
-    const BTN1  = document.getElementById('loadMore');
-    const BTN2  = document.getElementById('loadMoreBottom');
+    const ERR   = document.getElementById('error');
+    const BTN1  = document.getElementById('refreshBtn');
+    const BTN2  = document.getElementById('loadMoreBtn');
+    const HINT  = document.getElementById('hint');
 
-    // Guard: if any required element is missing, show a helpful message
-    if (!FEED || !STATS || !ERR || !BTN1 || !BTN2) {
-      alert('Page missing required elements. Please use this index.html as-is.');
-      return;
+    let tweetIds = []; // full (capped) list for this page
+    let idx = 0;       // next index to render
+
+    // Safe date → epoch ms
+    function eTime(str) {
+      if (!str) return 0;
+      const d = new Date(str);
+      return Number.isNaN(d.getTime()) ? 0 : d.getTime();
     }
 
-    // Tunables (kept small so page stays snappy)
-    const BATCH    = 6;   // render per step
-    const MAX_SHOW = 60;  // never render more than this many
-
-    let tweetIds = [];
-    let idx = 0;
-    let rendering = false;
-
-    // Normalize a status URL → extract the numeric ID
-    function toId(u) {
-      if (typeof u !== 'string') return null;
-      u = u.trim().replace('https://x.com/', 'https://twitter.com/');
-      const m = u.match(/twitter\.com\/[^/]+\/status\/(\d+)/i);
+    // Extract tweet ID from URL
+    function toId(url) {
+      if (!url) return null;
+      const m = String(url).match(/status\/(\d+)/);
       return m ? m[1] : null;
     }
 
-    function uniq(arr) {
-      const s = new Set();
-      const out = [];
-      for (const v of arr) {
-        if (!s.has(v)) { s.add(v); out.push(v); }
-      }
-      return out;
+    // Build one tweet embed container
+    function tweetEmbedHtml(id) {
+      const url = `https://twitter.com/anyuser/status/${id}`;
+      return `
+        <div class="card">
+          <blockquote class="twitter-tweet" data-dnt="true" data-theme="dark">
+            <a href="${url}"></a>
+          </blockquote>
+        </div>`;
     }
 
     async function loadData() {
       try {
-        // bust caches decisively
+        ERR.style.display = 'none';
+        FEED.innerHTML = '';
+        STATS.textContent = 'Loading…';
+        BTN2.disabled = true;
+
         const bust = Date.now();
         const r = await fetch(`tweets.json?v=${bust}`, { cache: 'no-store' });
         if (!r.ok) throw new Error('Failed to fetch tweets.json: ' + r.status);
-        const arr = await r.json();
 
-        let ids = Array.isArray(arr) ? arr.map(toId).filter(Boolean) : [];
-        ids = ids.reverse();             // newest first
-        ids = ids.slice(0, MAX_SHOW);    // hard cap in UI
-        ids = uniq(ids);
+        const arr = await r.json();
+        const list = Array.isArray(arr) ? arr : [];
+
+        // Accept both strings and {url,repliedAt}
+        const entries = list.map(item => {
+          if (typeof item === 'string') return { url: item, repliedAt: null };
+          return { url: item.url, repliedAt: item.repliedAt || null };
+        }).filter(e => !!e.url);
+
+        // Sort newest first by repliedAt if present
+        entries.sort((a, b) => eTime(b.repliedAt) - eTime(a.repliedAt));
+
+        // Extract IDs, cap to MAX_SHOW for front-end
+        let ids = entries.map(e => toId(e.url)).filter(Boolean);
+        ids = ids.slice(0, MAX_SHOW);
 
         tweetIds = ids;
-        idx = 0;                         // reset pointer when list changes
-        FEED.innerHTML = '';             // clear old DOM
-        STATS.textContent = `Loaded ${tweetIds.length} tweet URLs (newest first).`;
-        BTN1.disabled = BTN2.disabled = tweetIds.length === 0;
+        idx = 0;
+
+        STATS.textContent = `Loaded ${tweetIds.length} tweet URL${tweetIds.length === 1 ? '' : 's'} (newest first).`;
+        HINT.textContent = tweetIds.length > BATCH_SIZE ? `Showing ${BATCH_SIZE}, click “Load more” for more.` : '';
+
+        // Auto-render first batch
+        renderNextBatch();
       } catch (e) {
         console.error(e);
         ERR.textContent = e.message || String(e);
+        ERR.style.display = 'block';
       }
     }
 
-    function ensureWidgets() {
-      return new Promise((resolve) => {
-        if (window.twttr && twttr.widgets && twttr.widgets.createTweet) return resolve();
-        const i = setInterval(() => {
-          if (window.twttr && twttr.widgets && twttr.widgets.createTweet) {
-            clearInterval(i);
-            resolve();
-          }
-        }, 50);
-      });
-    }
-
-    async function renderBatch() {
-      if (rendering) return;
-      rendering = true;
-
-      const end = Math.min(idx + BATCH, tweetIds.length);
-      const slice = tweetIds.slice(idx, end);
-
-      for (const id of slice) {
-        const card = document.createElement('div');
-        card.className = 'tweet-card';
-        FEED.appendChild(card);
-
-        try {
-          await ensureWidgets();
-          await twttr.widgets.createTweet(id, card, { theme: 'dark', align: 'center' });
-        } catch (e) {
-          card.textContent = 'Failed to render tweet ' + id;
-          console.error(e);
-        }
+    function renderNextBatch() {
+      const next = tweetIds.slice(idx, idx + BATCH_SIZE);
+      if (!next.length) {
+        BTN2.disabled = true;
+        HINT.textContent = 'End of list.';
+        return;
       }
 
-      idx = end;
-      if (idx >= tweetIds.length) {
-        BTN1.disabled = BTN2.disabled = true;
+      const html = next.map(id => tweetEmbedHtml(id)).join('');
+      const wrap = document.createElement('div');
+      wrap.innerHTML = html;
+      FEED.appendChild(wrap);
+
+      // Ask Twitter to hydrate new embeds
+      if (window.twttr && twttr.widgets && twttr.widgets.load) {
+        twttr.widgets.load(wrap);
       }
-      rendering = false;
+
+      idx += next.length;
+      BTN2.disabled = idx >= tweetIds.length;
+      HINT.textContent = BTN2.disabled ? 'End of list.' : `Showing ${idx} of ${tweetIds.length}.`;
     }
 
-    // Auto-load on scroll (lazy)
-    const sentinel = document.createElement('div');
-    FEED.after(sentinel);
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some(e => e.isIntersecting)) renderBatch();
-    }, { rootMargin: '800px' });
-    io.observe(sentinel);
+    BTN1.addEventListener('click', loadData);
+    BTN2.addEventListener('click', renderNextBatch);
 
-    BTN1.addEventListener('click', renderBatch);
-    BTN2.addEventListener('click', renderBatch);
-
-    await loadData();
-    await renderBatch(); // first batch
-  })();
+    // Initial load
+    loadData();
   </script>
 </body>
 </html>
