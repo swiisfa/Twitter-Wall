@@ -1,176 +1,106 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Parent Tweets Feed</title>
-  <style>
-    :root {
-      --bg: #0b0e11;
-      --card: #11161c;
-      --text: #e8edf2;
-      --muted: #9fb0c3;
-      --accent: #2aa3ff;
-      --border: #1b2430;
+<script>
+(async function () {
+  const FEED = document.getElementById('feed');
+  const STATS = document.getElementById('stats');
+  const ERR = document.getElementById('errors');
+  const BTN1 = document.getElementById('loadMore');
+  const BTN2 = document.getElementById('loadMoreBottom');
+
+  // ↓↓↓ tweaked here
+  const BATCH = 6;     // render per step (was 10)
+  const MAX_SHOW = 60; // safety cap on total tweets (was 120)
+
+  let tweetIds = [];
+  let idx = 0;
+  let rendering = false;
+
+  function toId(u) {
+    if (typeof u !== 'string') return null;
+    u = u.trim().replace('https://x.com/', 'https://twitter.com/');
+    const m = u.match(/twitter\.com\/[^/]+\/status\/(\d+)/i);
+    return m ? m[1] : null;
+  }
+
+  function uniq(arr) {
+    const s = new Set();
+    const out = [];
+    for (const v of arr) {
+      if (!s.has(v)) { s.add(v); out.push(v); }
     }
-    html, body { margin:0; padding:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
-    .wrap { max-width: 860px; margin: 32px auto; padding: 0 16px 64px; }
-    header { margin-bottom: 16px; }
-    h1 { margin:0 0 6px; font-size: 24px; }
-    .sub { color: var(--muted); font-size: 13px; }
-    .stats { color: var(--muted); font-size: 13px; margin: 10px 0 20px; }
-    .tweet-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 8px 8px 2px;
-      margin: 14px 0;
-      min-height: 100px;
+    return out;
+  }
+
+  async function loadData() {
+    try {
+      // ↓↓↓ cache-buster here
+      const bust = Date.now();
+      const r = await fetch(`tweets.json?v=${bust}`, { cache: 'no-store' });
+      if (!r.ok) throw new Error('Failed to fetch tweets.json: ' + r.status);
+      const arr = await r.json();
+      let ids = Array.isArray(arr) ? arr.map(toId).filter(Boolean) : [];
+      ids = ids.reverse();             // newest first
+      ids = ids.slice(0, MAX_SHOW);    // cap
+      ids = uniq(ids);
+      tweetIds = ids;
+      STATS.textContent = `Loaded ${tweetIds.length} tweet URLs (newest first).`;
+      if (!tweetIds.length) BTN1.disabled = BTN2.disabled = true;
+    } catch (e) {
+      ERR.textContent = e.message;
     }
-    .controls { display:flex; gap:12px; align-items:center; margin:18px 0; }
-    button {
-      background: var(--accent); color:#001523; border:0; border-radius: 10px;
-      padding: 10px 14px; font-weight: 600; cursor: pointer;
-    }
-    button:disabled { opacity: .5; cursor: default; }
-    .hint { color: var(--muted); font-size: 12px; }
-    .error { color: #ff6b6b; font-size: 13px; margin: 8px 0; }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <h1>Parent Tweets Feed</h1>
-      <div class="sub">This page renders full tweet embeds from <code>tweets.json</code>. Updated by n8n.</div>
-      <div class="stats" id="stats">Loading…</div>
-    </header>
+  }
 
-    <div class="controls">
-      <button id="loadMore">Load more</button>
-      <span class="hint">Tweets render in small batches to keep things smooth.</span>
-    </div>
+  async function renderBatch() {
+    if (rendering) return;
+    rendering = true;
 
-    <div id="feed"></div>
+    const end = Math.min(idx + BATCH, tweetIds.length);
+    const slice = tweetIds.slice(idx, end);
 
-    <div class="controls">
-      <button id="loadMoreBottom">Load more</button>
-      <span class="hint">You can also just scroll; more will load automatically.</span>
-    </div>
+    for (const id of slice) {
+      const card = document.createElement('div');
+      card.className = 'tweet-card';
+      FEED.appendChild(card);
 
-    <div id="errors" class="error"></div>
-  </div>
-
-  <!-- X widgets (async load) -->
-  <script async src="https://platform.twitter.com/widgets.js"></script>
-  <script>
-  (async function () {
-    const FEED = document.getElementById('feed');
-    const STATS = document.getElementById('stats');
-    const ERR = document.getElementById('errors');
-    const BTN1 = document.getElementById('loadMore');
-    const BTN2 = document.getElementById('loadMoreBottom');
-
-    const BATCH = 10;   // render per step
-    const MAX_SHOW = 120; // extra safety cap in UI (even if file has more)
-    let tweetIds = [];
-    let idx = 0;
-    let rendering = false;
-
-    // strict validator: accept only twitter/x status URLs; extract numeric id
-    function toId(u) {
-      if (typeof u !== 'string') return null;
-      // normalize x.com -> twitter.com early
-      u = u.trim().replace('https://x.com/', 'https://twitter.com/');
-      const m = u.match(/twitter\.com\/[^/]+\/status\/(\d+)/i);
-      return m ? m[1] : null;
-    }
-
-    function uniq(arr) {
-      const s = new Set();
-      const out = [];
-      for (const v of arr) {
-        if (!s.has(v)) { s.add(v); out.push(v); }
-      }
-      return out;
-    }
-
-    async function loadData() {
       try {
-        const r = await fetch('tweets.json', { cache: 'no-store' });
-        if (!r.ok) throw new Error('Failed to fetch tweets.json: ' + r.status);
-        const arr = await r.json();
-        // validate & extract IDs
-        let ids = Array.isArray(arr) ? arr.map(toId).filter(Boolean) : [];
-        // newest first
-        ids = ids.reverse();
-        // hard cap in UI
-        ids = ids.slice(0, MAX_SHOW);
-        ids = uniq(ids);
-        tweetIds = ids;
-        STATS.textContent = `Loaded ${tweetIds.length} tweet URLs (showing newest first).`;
-        if (!tweetIds.length) BTN1.disabled = BTN2.disabled = true;
+        await ensureWidgets();
+        await twttr.widgets.createTweet(id, card, { theme: 'dark', align: 'center' });
       } catch (e) {
-        ERR.textContent = e.message;
+        card.textContent = 'Failed to render tweet ' + id;
+        console.error(e);
       }
     }
 
-    async function renderBatch() {
-      if (rendering) return;
-      rendering = true;
+    idx = end;
+    if (idx >= tweetIds.length) {
+      BTN1.disabled = BTN2.disabled = true;
+    }
+    rendering = false;
+  }
 
-      const end = Math.min(idx + BATCH, tweetIds.length);
-      const slice = tweetIds.slice(idx, end);
-
-      for (const id of slice) {
-        const card = document.createElement('div');
-        card.className = 'tweet-card';
-        FEED.appendChild(card);
-
-        try {
-          // widgets.js will be available after async load; wait if needed
-          await ensureWidgets();
-          await twttr.widgets.createTweet(id, card, { theme: 'dark', align: 'center' });
-        } catch (e) {
-          card.textContent = 'Failed to render tweet ' + id;
-          console.error(e);
+  function ensureWidgets() {
+    return new Promise((resolve) => {
+      if (window.twttr && twttr.widgets && twttr.widgets.createTweet) return resolve();
+      const i = setInterval(() => {
+        if (window.twttr && twttr.widgets && twttr.widgets.createTweet) {
+          clearInterval(i);
+          resolve();
         }
-      }
+      }, 50);
+    });
+  }
 
-      idx = end;
-      if (idx >= tweetIds.length) {
-        BTN1.disabled = BTN2.disabled = true;
-      }
-      rendering = false;
-    }
+  // auto-load more on scroll near bottom
+  const sentinel = document.createElement('div');
+  FEED.after(sentinel);
+  const io = new IntersectionObserver((entries) => {
+    if (entries.some(e => e.isIntersecting)) renderBatch();
+  }, { rootMargin: '800px' });
+  io.observe(sentinel);
 
-    function ensureWidgets() {
-      return new Promise((resolve) => {
-        if (window.twttr && twttr.widgets && twttr.widgets.createTweet) return resolve();
-        const i = setInterval(() => {
-          if (window.twttr && twttr.widgets && twttr.widgets.createTweet) {
-            clearInterval(i);
-            resolve();
-          }
-        }, 50);
-      });
-    }
+  BTN1.addEventListener('click', renderBatch);
+  BTN2.addEventListener('click', renderBatch);
 
-    // auto-load more on scroll near bottom
-    const sentinel = document.createElement('div');
-    FEED.after(sentinel);
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some(e => e.isIntersecting)) renderBatch();
-    }, { rootMargin: '800px' });
-    io.observe(sentinel);
-
-    BTN1.addEventListener('click', renderBatch);
-    BTN2.addEventListener('click', renderBatch);
-
-    await loadData();
-    // initial two batches for a quick view
-    await renderBatch();
-    await renderBatch();
-  })();
-  </script>
-</body>
-</html>
+  await loadData();
+  await renderBatch(); // first batch
+})();
+</script>
