@@ -98,5 +98,8 @@
   {
     "url": "{\n  \"nodes\": [\n    {\n      \"parameters\": {\n        \"assignments\": {\n          \"assignments\": [\n            {\n              \"id\": \"url-field\",\n              \"name\": \"url\",\n              \"type\": \"string\",\n              \"value\": \"=https://twitter.com/anyuser/status/1964689315734454356\"\n            },\n            {\n              \"id\": \"repliedAt-field\",\n              \"name\": \"repliedAt\",\n              \"type\": \"string\",\n              \"value\": \"=Mon Sep 08 02:02:34 +0000 2025\"\n            },\n            {\n              \"id\": \"replyId-field\",\n              \"name\": \"replyId\",\n              \"type\": \"string\",\n              \"value\": \"=1964871957561958682\"\n            }\n          ]\n        },\n        \"options\": {\n          \"include\": \"all\"   // keep other fields if you want; change to \"selected\" to emit only these 3\n        }\n      },\n      \"type\": \"n8n-nodes-base.set\",\n      \"typeVersion\": 3.4,\n      \"position\": [ 280, -100 ],\n      \"name\": \"Collect Parent URLs\"\n    }\n  ],\n  \"connections\": {}\n}",
     "repliedAt": null
-  }
+  },
+  "https://api.github.com/repos/swiisfa/Twitter-Wall/contents/tweets.json?ref=main",
+  "https://twitter.com/anyuser/status/1964751520592998532",
+  "https://twitter.com/anyuser/status/1964689315734454356"
 ]
