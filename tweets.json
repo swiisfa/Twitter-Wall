@@ -1,5 +1,9 @@
 [
   {
+    "url": "https://twitter.com/anyuser/status/1965173590510502247",
+    "repliedAt": "Tue Sep 09 00:27:11 +0000 2025"
+  },
+  {
     "url": "https://twitter.com/anyuser/status/1965078327410233554",
     "repliedAt": "Tue Sep 09 00:26:21 +0000 2025"
   },
@@ -362,6 +366,10 @@
   {
     "url": "https://twitter.com/anyuser/status/1965029695176745093",
     "repliedAt": "Mon Sep 08 13:45:14 +0000 2025"
+  },
+  {
+    "url": "https://twitter.com/anyuser/status/1964873154599493823",
+    "repliedAt": "Mon Sep 08 13:41:58 +0000 2025"
   },
   {
     "url": "https://twitter.com/anyuser/status/1965046286945518074",
@@ -790,13 +798,5 @@
   {
     "url": "https://twitter.com/anyuser/status/1964898456897761589",
     "repliedAt": "Mon Sep 08 10:14:11 +0000 2025"
-  },
-  {
-    "url": "https://twitter.com/anyuser/status/1964790312766931322",
-    "repliedAt": "Mon Sep 08 10:08:22 +0000 2025"
-  },
-  {
-    "url": "https://twitter.com/anyuser/status/1964730016190935090",
-    "repliedAt": "Mon Sep 08 10:01:08 +0000 2025"
   }
 ]
