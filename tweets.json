@@ -1,5 +1,9 @@
 [
   {
+    "url": "https://twitter.com/anyuser/status/1965880065709006878",
+    "repliedAt": "Thu Sep 11 08:01:01 +0000 2025"
+  },
+  {
     "url": "https://twitter.com/anyuser/status/1965886127359012917",
     "repliedAt": "Thu Sep 11 07:53:04 +0000 2025"
   },
@@ -794,9 +798,5 @@
   {
     "url": "https://twitter.com/anyuser/status/1965861122004926897",
     "repliedAt": "Wed Sep 10 20:51:58 +0000 2025"
-  },
-  {
-    "url": "https://twitter.com/anyuser/status/1965877114353398134",
-    "repliedAt": "Wed Sep 10 20:50:11 +0000 2025"
   }
 ]
