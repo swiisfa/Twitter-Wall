@@ -37,18 +37,6 @@
     .err{color:#ff6b6b; white-space:pre-wrap}
     .footer-space{height:60px}
     .small{color:var(--muted); font-size:12px}
-
-    /* NEW: tiny “replied · X ago” badge */
-    .badge{
-      display:inline-block;
-      font-size:12px;
-      color:#cbd5e1;
-      background:rgba(29,155,240,.12);
-      border:1px solid rgba(29,155,240,.35);
-      padding:2px 8px;
-      border-radius:999px;
-      margin-bottom:6px;
-    }
   </style>
 
   <!-- Twitter widgets -->
@@ -88,44 +76,52 @@
     const BTN2  = document.getElementById('loadMoreBtn');
     const HINT  = document.getElementById('hint');
 
-    // We’ll keep objects { id, repliedAt } so we can show the badge
-    let tweetItems = []; // full (capped) list for this page
-    let idx = 0;         // next index to render
+    // Global state for paging
+    let STATE = { entries: [], idx: 0 };
 
-    // Safe date → epoch ms
+    // Helpers
     function eTime(str) {
       if (!str) return 0;
       const d = new Date(str);
       return Number.isNaN(d.getTime()) ? 0 : d.getTime();
     }
-
-    // “3m / 2h / 1d” formatter
-    function timeAgo(ms) {
-      const s = Math.floor((Date.now() - ms) / 1000);
-      if (s < 60) return `${s}s`;
-      const m = Math.floor(s / 60);
-      if (m < 60) return `${m}m`;
-      const h = Math.floor(m / 60);
-      if (h < 24) return `${h}h`;
-      const d = Math.floor(h / 24);
-      return `${d}d`;
-    }
-
-    // Extract tweet ID from URL
     function toId(url) {
       if (!url) return null;
       const m = String(url).match(/status\/(\d+)/);
       return m ? m[1] : null;
     }
+    function timeAgo(str) {
+      if (!str) return '';
+      const d = new Date(str);
+      const ms = Date.now() - d.getTime();
+      if (isNaN(ms) || ms < 0) return '';
+      const m = Math.floor(ms / 60000);
+      if (m < 1)  return 'just now';
+      if (m < 60) return `${m}m ago`;
+      const h = Math.floor(m / 60);
+      if (h < 24) return `${h}h ago`;
+      const dys = Math.floor(h / 24);
+      return `${dys}d ago`;
+    }
 
-    // Build one tweet embed container (UNCHANGED look, just adds badge if available)
-    function tweetEmbedHtml(item) {
-      const { id, repliedAt } = item;
-      const url = `https://twitter.com/anyuser/status/${id}`;
-      const badge = repliedAt ? `<div class="badge" title="${new Date(repliedAt).toLocaleString()}">replied · ${timeAgo(eTime(repliedAt))} ago</div>` : '';
+    // Build tweet embed + meta ("by @user • 3m ago")
+    function tweetEmbedHtml(entry) {
+      const id   = entry.id;
+      const url  = `https://twitter.com/anyuser/status/${id}`;
+      const who  = Array.isArray(entry.repliers) && entry.repliers.length
+                    ? entry.repliers.join(', ')
+                    : '';
+      const when = timeAgo(entry.repliedAt);
+
+      const meta = (who || when)
+        ? `<div class="small" style="margin:4px 0 ${who && when ? '8px' : '6px'} 0;">
+             ${who ? `by ${who}` : ''}${who && when ? ' • ' : ''}${when || ''}
+           </div>`
+        : '';
+
       return `
         <div class="card">
-          ${badge}
+          ${meta}
           <blockquote class="twitter-tweet" data-dnt="true" data-theme="dark">
             <a href="${url}"></a>
           </blockquote>
@@ -146,23 +142,33 @@
         const arr = await r.json();
         const list = Array.isArray(arr) ? arr : [];
 
-        // Accept both strings and {url,repliedAt}; normalize to {id, repliedAt}
+        // Accept strings or objects; normalize to {id, repliedAt, repliers[]}
         const entries = list.map(item => {
-          if (typeof item === 'string') return { id: toId(item), repliedAt: null };
-          return { id: toId(item.url), repliedAt: item.repliedAt || null };
-        }).filter(e => !!e.id);
+          if (typeof item === 'string') {
+            const id = toId(item);
+            return id ? { id, repliedAt: null, repliers: [] } : null;
+          }
+          const id = toId(item.url || '');
+          if (!id) return null;
+          const repliers = Array.isArray(item.repliers) ? item.repliers : [];
+          return {
+            id,
+            repliedAt: item.repliedAt || null,
+            repliers
+          };
+        }).filter(Boolean);
 
-        // Sort newest first by repliedAt if present (falls back to 0 → end)
+        // newest first by repliedAt
         entries.sort((a, b) => eTime(b.repliedAt) - eTime(a.repliedAt));
 
-        // Cap to MAX_SHOW for front-end
-        tweetItems = entries.slice(0, MAX_SHOW);
-        idx = 0;
+        // cap for front-end
+        const capped = entries.slice(0, MAX_SHOW);
 
-        STATS.textContent = `Loaded ${tweetItems.length} tweet URL${tweetItems.length === 1 ? '' : 's'} (newest first).`;
-        HINT.textContent = tweetItems.length > BATCH_SIZE ? `Showing ${BATCH_SIZE}, click “Load more” for more.` : '';
+        STATE = { entries: capped, idx: 0 };
 
-        // Auto-render first batch
+        STATS.textContent = `Loaded ${capped.length} tweet URL${capped.length === 1 ? '' : 's'} (newest first).`;
+        HINT.textContent  = capped.length > BATCH_SIZE ? `Showing ${BATCH_SIZE}, click “Load more” for more.` : '';
+
         renderNextBatch();
       } catch (e) {
         console.error(e);
@@ -172,30 +178,30 @@
     }
 
     function renderNextBatch() {
-      const next = tweetItems.slice(idx, idx + BATCH_SIZE);
+      const next = STATE.entries.slice(STATE.idx, STATE.idx + BATCH_SIZE);
       if (!next.length) {
         BTN2.disabled = true;
         HINT.textContent = 'End of list.';
         return;
       }
 
-      const html = next.map(item => tweetEmbedHtml(item)).join('');
+      const html = next.map(entry => tweetEmbedHtml(entry)).join('');
       const wrap = document.createElement('div');
       wrap.innerHTML = html;
       FEED.appendChild(wrap);
 
-      // Ask Twitter to hydrate new embeds
       if (window.twttr && twttr.widgets && twttr.widgets.load) {
         twttr.widgets.load(wrap);
       }
 
-      idx += next.length;
-      BTN2.disabled = idx >= tweetItems.length;
-      HINT.textContent = BTN2.disabled ? 'End of list.' : `Showing ${idx} of ${tweetItems.length}.`;
+      STATE.idx += next.length;
+      BTN2.disabled = STATE.idx >= STATE.entries.length;
+      HINT.textContent = BTN2.disabled ? 'End of list.' : `Showing ${STATE.idx} of ${STATE.entries.length}.`;
     }
 
-    BTN1.addEventListener('click', loadData);
-    BTN2.addEventListener('click', renderNextBatch);
+    // Buttons
+    document.getElementById('refreshBtn').addEventListener('click', loadData);
+    document.getElementById('loadMoreBtn').addEventListener('click', renderNextBatch);
 
     // Initial load
     loadData();
